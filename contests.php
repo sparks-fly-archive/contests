@@ -79,13 +79,11 @@ elseif($mybb->input['action'] == "do_add_contest") {
     $title = $mybb->get_input('title');
     $description = $mybb->get_input('description');
     $tags = $mybb->get_input('tags');
+    if(!$mybb->get_input('savedraft')) {
+        $visibility = 1;
+    } else { $visibility = 0; }
     
-	// Start & Ende
-	$start_day = (int)$mybb->get_input('start_day');
-	$start_month = $db->escape_string($mybb->get_input('start_month'));
-	$start_year = (int)$mybb->get_input('start_year');
-	$start = strtotime("$start_day $start_month $start_year");
-
+	// Ende
 	$end_day = (int)$mybb->get_input('end_day');
 	$end_month = $db->escape_string($mybb->get_input('end_month'));
 	$end_year = (int)$mybb->get_input('end_year');
@@ -98,8 +96,9 @@ elseif($mybb->input['action'] == "do_add_contest") {
 		"name" => $db->escape_string($title),
 		"description" => $db->escape_string($description),
 		"tags" => $db->escape_string($mybb->get_input('tags')),
-		"starttime" => (int)$start,
-		"endtime" => (int)$end
+		"starttime" => TIME_NOW,
+        "endtime" => (int)$end,
+        "visibility" => (int)$visibility
     );
 
     $sql = "SELECT cid FROM mybb_contests LIMIT 1 ORDER BY cid DESC";
@@ -107,21 +106,23 @@ elseif($mybb->input['action'] == "do_add_contest") {
     $cid = $cid + 1;
     
     // Verschicke einen Alert an User mit entsprechendem Tag
-    $taglist = explode(", ", $tags);
-    foreach($taglist as $tag) {
-        $tag = $db->escape_string($tag);
-        $sql = "SELECT uid FROM mybb_contests_user_options WHERE tags LIKE '%$tag%'";
-        $query = $db->query($sql);
-        while($uids = $db->fetch_array($query)) {
-	        // alert
-	        $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('tags');
- 	        if ($alertType != NULL && $alertType->getEnabled()) {
-    	        $alert = new MybbStuff_MyAlerts_Entity_Alert((int)$uids['uid'], $alertType, (int)$cid);
-                $alert->setExtraDetails([
-                    'tags' => $tag
-    	        ]); 
-    	        MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
-        	} 
+    if(!$mybb->get_input('savedraft')) {
+        $taglist = explode(", ", $tags);
+        foreach($taglist as $tag) {
+            $tag = $db->escape_string($tag);
+            $sql = "SELECT uid FROM mybb_contests_user_options WHERE tags LIKE '%$tag%'";
+            $query = $db->query($sql);
+            while($uids = $db->fetch_array($query)) {
+                // alert
+                $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('tags');
+                if ($alertType != NULL && $alertType->getEnabled()) {
+                    $alert = new MybbStuff_MyAlerts_Entity_Alert((int)$uids['uid'], $alertType, (int)$cid);
+                    $alert->setExtraDetails([
+                        'tags' => $tag
+                    ]); 
+                    MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
+                } 
+            }
         }
     }
 

@@ -37,6 +37,7 @@ function contests_install() {
             `tags` text NOT NULL,
             `starttime` text NOT NULL,
             `endtime` text NOT NULL,
+            `visibility` tinyint,
             PRIMARY KEY (`cid`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
     }

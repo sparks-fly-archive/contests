@@ -89,6 +89,9 @@ function contests_templates_install() {
 </tr>
 <tr>
     <td class="trow2 smalltext"><img src="images/contests/009-add.png" style="width: 11px;" />  <a href="contests.php?action=add_contest">Contest hinzufügen</a></td>
+</tr>
+<tr>
+    <td class="trow2 smalltext"><img src="images/contests/009-add.png" style="width: 11px;" />  <a href="contests.php?action=drafts">Entwürfe</a></td>
 </tr>'),
     'sid'		=> '-1',
     'version'	=> '',
@@ -187,26 +190,6 @@ function contests_templates_install() {
                     <td class="tcat" colspan="2"><strong>Zeit & Fristen</strong></td>
                 </tr>
                 <tr>
-                    <td class="trow2" width="50%">
-                        <strong>Start-Datum:</strong>
-                    </td>
-                    <td class="trow2" width="60%" align="center">
-                        <select name="start_day">{$day_bit}</select> <select name="start_month">
-                        <option value="january">Januar</option>
-                        <option value="february">Februar</option>
-                        <option value="march">März</option>
-                        <option value="april">April</option>
-                        <option value="may">Mai</option>
-                        <option value="june">Juni</option>
-                        <option value="july">Juli</option>
-                        <option value="august">August</option>
-                        <option value="september">September</option>
-                        <option value="october">Oktober</option>
-                        <option value="november">November</option>
-                        <option value="december">Dezember</option></select> <select name="start_year">{$year_bit}</select> 
-                    </td>
-                </tr>
-                <tr>
                     <td class="trow1" width="50%">
                         <strong>End-Datum:</strong>
                     </td>
@@ -231,7 +214,7 @@ function contests_templates_install() {
     <br />
     <center>
     <input type="hidden" name="action" value="do_add_contest" />
-    <input type="submit" class="button" name="submit" value="Contest hinzufügen" />
+    <input type="submit" class="button" name="savedraft" value="Entwurf speichern" /> <input type="submit" class="button" name="submit" value="Contest hinzufügen" />
     </center>
         </form>
             
