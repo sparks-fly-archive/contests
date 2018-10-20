@@ -138,9 +138,7 @@ function contests_templates_install() {
                                 </td>
                                 <td align="center"><select name="section">
                                     <option value="">Bereich auswählen</option>
-                                    <option value="coding">Coding</option>
-                                    <option value="graphics">Graphics</option>
-                                    <option value="writing">Writing</option>
+        							{$category_bit}
                                     </select></td>
                             </tr>
                         </table>
@@ -153,7 +151,7 @@ function contests_templates_install() {
                                 <td width="50%"><strong>Art des Contest:</strong>
                                 </td>
                                 <td class="trow1" width="60%" align="center">
-                                  <input type="text" name="type" size="25" />
+                                  <input type="text" name="type" size="25" value="{$contest[\'type\']}"/>
                                 </td>
                             </tr>
                         </table>
@@ -164,7 +162,7 @@ function contests_templates_install() {
                         <strong>Contest-Name:</strong>
                     </td>
                     <td class="trow2" width="60%" align="center">
-                        <input type="text" name="title" size="25" />
+                        <input type="text" name="title" size="25" value="{$contest[\'name\']}" />
                     </td>
                 </tr>
                 <tr>
@@ -172,8 +170,7 @@ function contests_templates_install() {
                 </tr>
                 <tr>
                     <td class="trow2" colspan="2" align="center">
-                        <textarea rows="7" cols="100" name="description"> 
-                        </textarea>
+                        <textarea rows="7" cols="100" name="description">{$contest[\'description\']}</textarea>
                     </td>
                 </tr>
                     <td class="tcat" colspan="2"><strong>Contest mit Tags versehen</strong></td>
@@ -183,7 +180,7 @@ function contests_templates_install() {
                         <strong>Tags:</strong>
                     </td>
                     <td class="trow1" width="60%" align="center">
-                        <input type="text" name="tags" size="25" />
+                        <input type="text" name="tags" size="25" value="{$contest[\'tags\']}" />
                     </td>
                 </tr>
                 <tr>
@@ -194,19 +191,15 @@ function contests_templates_install() {
                         <strong>End-Datum:</strong>
                     </td>
                     <td class="trow1" width="60%" align="center">
-                        <select name="end_day">{$day_bit}</select> <select name="end_month">
-                        <option value="january">Januar</option>
-                        <option value="february">Februar</option>
-                        <option value="march">März</option>
-                        <option value="april">April</option>
-                        <option value="may">Mai</option>
-                        <option value="june">Juni</option>
-                        <option value="july">Juli</option>
-                        <option value="august">August</option>
-                        <option value="september">September</option>
-                        <option value="october">Oktober</option>
-                        <option value="november">November</option>
-                        <option value="december">Dezember</option></select> <select name="end_year">{$year_bit}</select> 
+                        <select name="end_day">
+							{$day_bit}
+						</select> 
+						<select name="end_month">
+							{$month_bit}
+						</select> 
+						<select name="end_year">
+							{$year_bit}
+						</select> 
                     </td>
                 </tr>
             </table>
@@ -214,6 +207,7 @@ function contests_templates_install() {
     <br />
     <center>
     <input type="hidden" name="action" value="do_add_contest" />
+		<input type="hidden" name="cid" value="{$cid}" />
     <input type="submit" class="button" name="savedraft" value="Entwurf speichern" /> <input type="submit" class="button" name="submit" value="Contest hinzufügen" />
     </center>
         </form>
@@ -300,6 +294,69 @@ function contests_templates_install() {
     'dateline'	=> TIME_NOW
   );
   $db->insert_query("templates", $contests_user_options);
+
+  $contests_team_drafts = array(
+    'title'		=> 'contests_team_drafts',
+    'template'	=> $db->escape_string('<html>
+    <head>
+    <title>Storming Gates - Contests - Entwürfe</title>
+    {$headerinclude}
+    </head>
+    <body>
+    {$header}
+    <table width="100%" border="0" align="center">
+    <tr>
+    <td width="23%" valign="top">
+    {$contests_nav}
+    </td>
+    <td valign="top">
+    <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+    <tr>
+    <td class="thead" colspan="{$colspan}"><strong>Storming Gates - Contests - Entwürfe</strong></td>
+    </tr>
+    <tr>
+    <td class="trow2" style="padding: 10px; text-align: justify;">
+    <div style="width: 95%; margin: auto; padding: 8px;" class="trow1">
+            {$multipage}
+		<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+		<tr>
+		<td class="thead" colspan="4"><strong>Entwürfe ($contestcount)</strong></td>
+		</tr>
+		<tr>
+		<td width="30%" class="tcat"><span class="smalltext"><strong>Contest-Name</strong></span></td>
+		<td class="tcat" align="center" width="30%"><span class="smalltext"><strong>Gespeichert</strong></span></td>
+		<td class="tcat" align="center" width="40%"><span class="smalltext"><strong>Optionen</strong></span></td>
+		</tr>
+		{$draft_bit}
+		</table>
+    </div>
+    </td>
+    </tr>
+    </table>
+    </td>
+    </tr>
+    </table>
+    {$footer}
+    </body>
+    </html>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_team_drafts);
+
+  $contests_team_drafts_bit = array(
+    'title'		=> 'contests_team_drafts_bit',
+    'template'	=> $db->escape_string('<tr>
+    <td class="{$trow}"><strong>{$draft[\'name\']}</strong><br /><span class="smalltext">{$draft[\'category\']}</span></td>
+    <td class="{$trow}" align="center">{$savedate}</td>
+    <td class="{$trow}" align="center"><a href="contests.php?action=add_contest&cid={$draft[\'cid\']}">Entwurf bearbeiten</a></td>
+    </tr>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_team_drafts_bit);
 
   /* $template_name = array(
     'title'		=> 'template_name',

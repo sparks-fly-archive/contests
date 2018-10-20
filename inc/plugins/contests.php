@@ -42,7 +42,6 @@ function contests_install() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
     }
 
-    #TODO: Sichtbarkeit für Contest-Beiträge einfügen
     if(!$db->table_exists("contests_user_options")) {
         $db->query("CREATE TABLE `mybb_contests_user_options` ( 
             `uoid` int(11) NOT NULL AUTO_INCREMENT,
@@ -51,11 +50,6 @@ function contests_install() {
             PRIMARY KEY (`uoid`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
     }
-
-
-    #TODO: Tabelle für Contest-Beiträge
-    #TODO: Tabelle für Contest-Umfragen
-    #TODO: Tabelle für Contest-Votes
 
     contests_templates_install();
 
@@ -92,6 +86,10 @@ function contests_uninstall() {
 
     if($db->table_exists("contests")) {
         $db->query("DROP TABLE `mybb_contests`");
+    }
+
+    if($db->table_exists("contests_user_options")) {
+        $db->query("DROP TABLE `mybb_user_options`");
     }
 
     contests_templates_uninstall();
