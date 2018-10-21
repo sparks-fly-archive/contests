@@ -371,5 +371,5 @@ function contests_templates_install() {
 
 function contests_templates_uninstall() {
     global $db;
-    $db->delete_query('templates', "title LIKE 'contests_%'");
+    $db->delete_query('templates', "title LIKE 'contests%'");
 }

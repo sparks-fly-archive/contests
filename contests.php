@@ -143,25 +143,38 @@ elseif($mybb->input['action'] == "drafts") {
 
 elseif($mybb->input['action'] == "do_add_contest") {
 
-    if($mybb->get_input('cid')) {
-        $cid = $mybb->get_input('cid');
-        $db->delete_query("contests", "cid = '$cid'");
-    }
-    
     $category = $mybb->get_input('section'); 
     $type = $mybb->get_input('type');
     $title = $mybb->get_input('title');
     $description = $mybb->get_input('description');
     $tags = $mybb->get_input('tags');
-    if(!$mybb->get_input('savedraft')) {
-        $visibility = 1;
-    } else { $visibility = 0; }
-    
 	// Ende
 	$end_day = (int)$mybb->get_input('end_day');
 	$end_month = $db->escape_string($mybb->get_input('end_month'));
 	$end_year = (int)$mybb->get_input('end_year');
     $end = strtotime("$end_day $end_month $end_year");
+    if(!$mybb->get_input('savedraft')) {
+        $visibility = 1;
+         // Error Handling
+        if(empty($category)) { 
+            $errormessages = "Du musst eine <strong>Kategorie</strong> auswählen!<br />";
+        } 
+        if(empty($type)) { $errormessages .= "Du musst einen <strong>Art des Contests</strong> angeben!<br />"; }
+        if(empty($title)) { $errormessages .= "Du musst einen <strong>Contestnamen</strong> angeben! <br />"; }
+        if(empty($description)) { $errormessages .= "Du musst einen <strong>Aufgabentext</strong> angeben! <br />"; }
+        if(empty($tags)) { $errormessages .= "Du musst den Contest mit <strong>Tags</strong> versehen! <br />"; }
+        if($end < TIME_NOW) { $errormessages .= "Die <strong>Deadline</strong> muss nach dem heutigen Datum liegen!<br />"; }
+        if($errormessages) {
+            error($errormessages."<strong>Nutze den Zurück-Button deines Browsers</strong>, um zur Contest-Erstellung zurückzukehren.");
+            return false;
+        }
+    } else { $visibility = 0; }
+
+
+    if($mybb->get_input('cid')) {
+        $cid = $mybb->get_input('cid');
+        $db->delete_query("contests", "cid = '$cid'");
+    }
     
 	$insert_array = array(
         "uid" => (int)$mybb->user['uid'],
@@ -169,7 +182,7 @@ elseif($mybb->input['action'] == "do_add_contest") {
 		"type" => $db->escape_string($type),
 		"name" => $db->escape_string($title),
 		"description" => $db->escape_string($description),
-		"tags" => $db->escape_string($mybb->get_input('tags')),
+		"tags" => $db->escape_string($tags),
 		"starttime" => TIME_NOW,
         "endtime" => (int)$end,
         "visibility" => (int)$visibility
@@ -182,7 +195,6 @@ elseif($mybb->input['action'] == "do_add_contest") {
         $cid = $db->fetch_field($db->query($sql), "cid");
         $taglist = explode(", ", $tags);
         foreach($taglist as $tag) {
-            $tag = $db->escape_string($tag);
             $sql = "SELECT uid FROM mybb_contests_user_options WHERE tags LIKE '%$tag%'";
             $query = $db->query($sql);
             while($uids = $db->fetch_array($query)) {
@@ -191,7 +203,7 @@ elseif($mybb->input['action'] == "do_add_contest") {
                 if ($alertType != NULL && $alertType->getEnabled()) {
                     $alert = new MybbStuff_MyAlerts_Entity_Alert((int)$uids['uid'], $alertType, (int)$cid);
                     $alert->setExtraDetails([
-                        'tags' => $tag
+                        'tags' => $tags
                     ]); 
                     MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
                 } 
@@ -201,4 +213,32 @@ elseif($mybb->input['action'] == "do_add_contest") {
 
     redirect("contests.php?action=add_contest");
     
+}
+
+elseif($mybb->input['action'] == "view") {
+    require_once MYBB_ROOT."inc/class_parser.php";
+    $parser = new postParser;
+    // Contest-Informationen
+    $cid = (int)$mybb->get_input(cid);
+    $sql = "SELECT * FROM mybb_contests WHERE cid = '$cid'";
+    $query = $db->query($sql);
+    $contest = $db->fetch_array($query);
+    $author = get_user($contest['uid']);
+    $author['avatarlink'] = "<a href=\"member.php?action=profile&uid={$author['uid']}\" target=\"_blank\"><img src=\"{$author['avatar']}\" width=\"100px\"/></a>";
+    $contest['deadline'] = date("d.m.Y", $contest['endtime']);
+
+    $options = array(
+		"allow_html" => 1,
+		"allow_mycode" => 1,
+		"allow_smilies" => 1,
+		"allow_imgcode" => 1,
+		"filter_badwords" => 0,
+		"nl2br" => 1,
+		"allow_videocode" => 1,
+	);
+	
+	$contest['description'] = $parser->parse_message($contest['description'], $options);
+
+    eval("\$page = \"".$templates->get("contests_view_contest")."\";");
+    output_page($page);   
 }

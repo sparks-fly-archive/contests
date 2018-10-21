@@ -89,7 +89,7 @@ function contests_uninstall() {
     }
 
     if($db->table_exists("contests_user_options")) {
-        $db->query("DROP TABLE `mybb_user_options`");
+        $db->query("DROP TABLE `mybb_contests_user_options`");
     }
 
     contests_templates_uninstall();
