@@ -73,6 +73,9 @@ function contests_templates_install() {
         <tr>
             <td class="trow1 smalltext"><img src="images/contests/002-edit-1.png" style="width: 12px;" /> <a href="contests.php?action=options">Einstellungen</a></td>
         </tr>
+        <tr>
+            <td class="trow2 smalltext"><img src="images/contests/007-push-pin.png" style="width: 12px;" /> <a href="contests.php?action=pinned">Gemerkte Contests</a></td>
+        </tr>
         {$contests_nav_team}
     </tbody>
     </table>'),
@@ -382,6 +385,11 @@ function contests_templates_install() {
     <div style="width: 95%; margin: auto; padding: 8px;" class="trow1">
 	<table border="0" cellspacing="5" cellpadding="{$theme[\'tablespace\']}"  class="tborder">
 		<tr>
+			<td class="trow2" colspan="2">
+				<div class="contest_options">{$contest_pin} {$team_options}</div>
+			</td>
+		</tr>
+		<tr>
 			<td class="trow2" id="sg-profile-avatar" valign="middle">
 				{$author[\'avatarlink\']}
 			</td>
@@ -512,6 +520,73 @@ function contests_templates_install() {
     'dateline'	=> TIME_NOW
   );
   $db->insert_query("templates", $contests_view_contests_bit);
+
+  $contests_team_contest_options = array(
+    'title'		=> '$contests_team_contest_options',
+    'template'	=> $db->escape_string('| <a href="contests.php?action=add_contest&cid={$contest[\'cid\']}">Contest bearbeiten</a>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_team_contest_options);
+
+  $contests_view_contest_pin = array(
+    'title'		=> '$contests_view_contest_pin',
+    'template'	=> $db->escape_string('<a href="contests.php?action=pin&cid={$contest[\'cid\']}">Contest Merken</a>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_contest_pin);
+
+  $contests_view_contest_unpin = array(
+    'title'		=> '$contests_view_contest_unpin',
+    'template'	=> $db->escape_string('<a href="contests.php?action=unpin&cid={$contest[\'cid\']}">Nicht weiter merken</a>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_contest_unpin);
+
+  $contests_view_pinned = array(
+    'title'		=> 'contests_view_pinned',
+    'template'	=> $db->escape_string('<html>
+    <head>
+    <title>Storming Gates - Gemerkte Contests</title>
+    {$headerinclude}
+    </head>
+    <body>
+    {$header}
+    <table width="100%" border="0" align="center">
+    <tr>
+    <td width="23%" valign="top">
+    {$contests_nav}
+    </td>
+    <td valign="top">
+    <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+    <tr>
+    <td class="thead" colspan="{$colspan}"><strong>Storming Gates - Gemerkte Contests</strong></td>
+    </tr>
+    <tr>
+    <td class="trow2" style="padding: 10px; text-align: justify;">
+    <div style="width: 95%; margin: auto; padding: 8px;" class="trow1">
+            {$multipage}
+			{$contest_bit}
+    </div>
+    </td>
+    </tr>
+    </table>
+    </td>
+    </tr>
+    </table>
+    {$footer}
+    </body>
+    </html>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_pinned);
 
   /* $template_name = array(
     'title'		=> 'template_name',

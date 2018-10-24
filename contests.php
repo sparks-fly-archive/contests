@@ -245,13 +245,26 @@ elseif($mybb->input['action'] == "view") {
 		"allow_videocode" => 1,
 	);
 	
-	$contest['description'] = $parser->parse_message($contest['description'], $options);
+    $contest['description'] = $parser->parse_message($contest['description'], $options);
+    
+    if($mybb->usergroup['cancp'] == "1") {
+        eval("\$team_options = \"".$templates->get("contests_team_contest_options")."\";");
+    }
+
+    $uid = $mybb->user['uid'];
+    $sql = "SELECT upid FROM mybb_contests_user_pinned WHERE cid = '{$cid}' AND uid = '{$uid}'";
+    $upid = $db->fetch_field($db->query($sql), "upid");
+    if($upid) {
+        eval("\$contest_pin = \"".$templates->get("contests_view_contest_unpin")."\";");
+    } else { eval("\$contest_pin = \"".$templates->get("contests_view_contest_pin")."\";"); }
 
     eval("\$page = \"".$templates->get("contests_view_contest")."\";");
     output_page($page);   
 }
 
 elseif($mybb->input['action'] == "browse") {
+    require_once MYBB_ROOT."inc/class_parser.php";
+    $parser = new postParser;
     // Filter vorbereiten
     $category = $mybb->get_input('category');
     $type = $mybb->get_input('type');
@@ -286,6 +299,16 @@ elseif($mybb->input['action'] == "browse") {
     $sql = "SELECT * FROM mybb_contests WHERE category LIKE '%$category%' AND type LIKE '%$type%' AND tags LIKE '%$tag%' AND endtime > '$timestamp' ORDER BY endtime ASC LIMIT $start, $perpage";
     $query = $db->query($sql);
     while($contest = $db->fetch_array($query)) {
+        $options = array(
+            "allow_html" => 1,
+            "allow_mycode" => 1,
+            "allow_smilies" => 0,
+            "allow_imgcode" => 0,
+            "filter_badwords" => 0,
+            "nl2br" => 0,
+            "allow_videocode" => 0,
+        );       
+        $contest['description'] = $parser->parse_message($contest['description'], $options);
         $contest['deadline'] = date("d.m.Y", $contest['endtime']);
         $end_day = date("d", $contest['endtime']);
         $end_month = date("F", $contest['endtime']);
@@ -349,11 +372,12 @@ elseif($mybb->input['action'] == "pin") {
 }
 
 elseif($mybb->input['action'] == "unpin") {
-    $upid = $mybb->get_input('upid');
-    $sql = "SELECT uid FROM mybb_contests_user_pinned WHERE upid = '{$upid}'";
+    $cid = $mybb->get_input('cid');
+    $userid = $mybb->user['uid'];
+    $sql = "SELECT uid FROM mybb_contests_user_pinned WHERE cid = '{$cid}' AND uid = '{$userid}'";
     $uid = $db->fetch_field($db->query($sql), "uid");
     if($uid == $mybb->user['uid']) {
-        $db->delete_query("contests_user_pinned", "upid = '{$upid}'");
+        $db->delete_query("contests_user_pinned", "cid = '{$cid}' AND uid = '{$userid}'");
     }
     redirect("contests.php?action=view&cid={$cid}");
 }
@@ -381,8 +405,9 @@ elseif($mybb->input['action'] == "pinned") {
     }
     $multipage = multipage($contestcount, $perpage, $page, $_SERVER['PHP_SELF']."?action=pinned");
     $timestamp = TIME_NOW;
-    $sql = "SELECT * FROM mybb_contests_user_pinned INNER JOIN mybb_contestes WHERE mybb_contests_user_pinned.uid = '{$uid}' AND endtime > '$timestamp'";
+    $sql = "SELECT * FROM mybb_contests_user_pinned INNER JOIN mybb_contests ON mybb_contests.cid = mybb_contests_user_pinned.cid WHERE mybb_contests_user_pinned.uid = '{$uid}' AND endtime > '$timestamp'";
     $query = $db->query($sql);
+    $contest_bit = "";
     while($contest = $db->fetch_array($query)) {
         $contest['deadline'] = date("d.m.Y", $contest['endtime']);
         $end_day = date("d", $contest['endtime']);
