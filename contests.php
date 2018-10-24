@@ -15,6 +15,15 @@ switch($mybb->input['action'])
 	break;
 	case "add_contest":
 		add_breadcrumb("Contest hinzufügen");
+    break;
+	case "drafts":
+		add_breadcrumb("Entwürfe ansehen");
+	break;
+	case "view":
+		add_breadcrumb("Contest ansehen");
+    break;
+	case "browse":
+		add_breadcrumb("Contests durchsuchen");
 	break;
 }
 
@@ -55,7 +64,6 @@ elseif($mybb->input['action'] == "do_options") {
 }
 
 elseif($mybb->input['action'] == "add_contest") {
-    #TODO: Error Handling
     if($mybb->usergroup['cancp'] != "1") { error_no_permission(); }
     $cid = (int)$mybb->input['cid'];
     $sql = "SELECT * FROM mybb_contests WHERE cid = '$cid'";
@@ -241,4 +249,146 @@ elseif($mybb->input['action'] == "view") {
 
     eval("\$page = \"".$templates->get("contests_view_contest")."\";");
     output_page($page);   
+}
+
+elseif($mybb->input['action'] == "browse") {
+    // Filter vorbereiten
+    $category = $mybb->get_input('category');
+    $type = $mybb->get_input('type');
+    $tag = $mybb->get_input('tag');
+    if(empty($type)) {
+        $type = "%";
+    } if(empty($category)) { $category = "%"; }
+    if(empty($tag)) { $tag = "%"; }
+    $timestamp = TIME_NOW;
+
+    // Multipage
+    $query = $db->simple_select("contests", "COUNT(*) AS numcontests", "category LIKE '%$category%' AND type LIKE '%$type%' AND tags LIKE '%$tag%' AND endtime > '$timestamp'");
+    $contestcount = $db->fetch_field($query, "numcontests");
+    $perpage = 10;
+    $page = intval($mybb->input['page']);
+    if($page) {
+        $start = ($page-1) *$perpage;
+    }
+    else {
+        $start = 0;
+        $page = 1;
+    }
+    $end = $start + $perpage;
+    $lower = $start+1;
+    $upper = $end;
+    if($upper > $contestcount) {
+        $upper = $contestcount;
+    }
+
+    $multipage = multipage($contestcount, $perpage, $page, $_SERVER['PHP_SELF']."?action=browse");
+
+    $sql = "SELECT * FROM mybb_contests WHERE category LIKE '%$category%' AND type LIKE '%$type%' AND tags LIKE '%$tag%' AND endtime > '$timestamp' ORDER BY endtime ASC LIMIT $start, $perpage";
+    $query = $db->query($sql);
+    while($contest = $db->fetch_array($query)) {
+        $contest['deadline'] = date("d.m.Y", $contest['endtime']);
+        $end_day = date("d", $contest['endtime']);
+        $end_month = date("F", $contest['endtime']);
+        eval("\$contest_bit .= \"".$templates->get("contests_view_contests_bit")."\";");
+    }
+
+    $sql = "SELECT DISTINCT type FROM mybb_contests WHERE endtime > '$timestamp' ORDER BY type ASC";
+    $query = $db->query($sql);
+    while($types = $db->fetch_array($query)) {
+        $types_checked = "";
+        if($type == $types['type']) {
+            $types_checked = "selected";
+        }
+        $types_bit .= "<option value=\"{$types['type']}\" {$types_checked}>{$types['type']}</option>";
+    }
+
+    $query = $db->query("SELECT tags FROM mybb_contests
+    WHERE tags != ''");
+
+    while($tag_query = $db->fetch_array($query)) {
+            $tag_array .= $tag_query['tags'].", ";
+    }
+
+    $tags = explode(", ", $tag_array);
+    sort($tags);
+    $tags = array_unique(array_map("StrToLower", $tags));
+    $tags = array_map("ucwords", $tags);
+    foreach($tags as $tag_contest) {
+        $tag_checked = "";
+        if(!empty($tag_contest)) {
+            if($tag == $tag_contest) {
+                $tag_checked = "selected";
+            }
+        $tag_bit .= "<option value=\"$tag_contest\" {$tag_checked}>$tag_contest</option>";
+        }
+    }
+
+    $categories = array("graphics" => "Grafik", "coding" => "Coding", "writing" => "Writing");
+    foreach($categories as $key => $value) {
+        $checked_cat = "";
+        if($category == $key) {
+            $checked_cat = "selected";
+        }
+        $category_bit .= "<option value=\"{$key}\" {$checked_cat}>{$value}</option>";
+    }
+    
+    eval("\$page = \"".$templates->get("contests_view_contests")."\";");
+    output_page($page);  
+}
+
+elseif($mybb->input['action'] == "pin") {
+    $cid = $mybb->get_input('cid');
+
+    $insert_array = array(
+        "uid" => $mybb->user['uid'],
+        "cid" => (int)$cid
+    );
+
+    $db->insert_query("contests_user_pinned", $insert_array);
+    redirect("contests.php?action=view&cid={$cid}");
+}
+
+elseif($mybb->input['action'] == "unpin") {
+    $upid = $mybb->get_input('upid');
+    $sql = "SELECT uid FROM mybb_contests_user_pinned WHERE upid = '{$upid}'";
+    $uid = $db->fetch_field($db->query($sql), "uid");
+    if($uid == $mybb->user['uid']) {
+        $db->delete_query("contests_user_pinned", "upid = '{$upid}'");
+    }
+    redirect("contests.php?action=view&cid={$cid}");
+}
+
+#TODO: Gepinnte Contests werden bei Erstellung der Umfrage gelöscht!
+elseif($mybb->input['action'] == "pinned") {
+    // Multipage
+    $uid = $mybb->user['uid'];
+    $query = $db->simple_select("contests_user_pinned", "COUNT(*) AS numcontests", "uid = '$uid'");
+    $contestcount = $db->fetch_field($query, "numcontests");
+    $perpage = 10;
+    $page = intval($mybb->input['page']);
+    if($page) {
+        $start = ($page-1) *$perpage;
+    }
+    else {
+        $start = 0;
+        $page = 1;
+    }
+    $end = $start + $perpage;
+    $lower = $start+1;
+    $upper = $end;
+    if($upper > $contestcount) {
+        $upper = $contestcount;
+    }
+    $multipage = multipage($contestcount, $perpage, $page, $_SERVER['PHP_SELF']."?action=pinned");
+    $timestamp = TIME_NOW;
+    $sql = "SELECT * FROM mybb_contests_user_pinned INNER JOIN mybb_contestes WHERE mybb_contests_user_pinned.uid = '{$uid}' AND endtime > '$timestamp'";
+    $query = $db->query($sql);
+    while($contest = $db->fetch_array($query)) {
+        $contest['deadline'] = date("d.m.Y", $contest['endtime']);
+        $end_day = date("d", $contest['endtime']);
+        $end_month = date("F", $contest['endtime']);
+        eval("\$contest_bit .= \"".$templates->get("contests_view_contests_bit")."\";");        
+    }
+    eval("\$page = \"".$templates->get("contests_view_pinned")."\";");
+    output_page($page);     
 }

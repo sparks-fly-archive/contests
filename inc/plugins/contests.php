@@ -51,6 +51,15 @@ function contests_install() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
     }
 
+    if(!$db->table_exists("contests_user_pinned")) {
+        $db->query("CREATE TABLE `mybb_contests_user_pinned` ( 
+            `upid` int(11) NOT NULL AUTO_INCREMENT,
+            `uid` int(11) NOT NULL,
+            `cid` int(11) NOT NULL,
+            PRIMARY KEY (`upid`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
+    }
+
     contests_templates_install();
 
 	// myalerts integration
@@ -90,6 +99,10 @@ function contests_uninstall() {
 
     if($db->table_exists("contests_user_options")) {
         $db->query("DROP TABLE `mybb_contests_user_options`");
+    }
+
+    if($db->table_exists("contests_user_pinned")) {
+        $db->query("DROP TABLE `mybb_contests_user_pinned`");
     }
 
     contests_templates_uninstall();
@@ -177,4 +190,4 @@ function contests_alerts() {
         );
     }
 
-} 
+}
