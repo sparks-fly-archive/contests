@@ -51,6 +51,15 @@ function contests_install() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
     }
 
+    if(!$db->table_exists("contests_user_pinned")) {
+        $db->query("CREATE TABLE `mybb_contests_user_pinned` ( 
+            `upid` int(11) NOT NULL AUTO_INCREMENT,
+            `uid` int(11) NOT NULL,
+            `cid` int(11) NOT NULL,
+            PRIMARY KEY (`upid`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
+    }
+
     contests_templates_install();
 
 	// myalerts integration
@@ -61,12 +70,19 @@ function contests_install() {
     	    $alertTypeManager = MybbStuff_MyAlerts_AlertTypeManager::createInstance($db, $cache);
     	}
 
-   	 	 $alertType = new MybbStuff_MyAlerts_Entity_AlertType();
-   		 $alertType->setCode('tags');
-   		 $alertType->setEnabled(true);
-   		 $alertType->setCanBeUserDisabled(true);
+   	 	$alertType = new MybbStuff_MyAlerts_Entity_AlertType();
+   		$alertType->setCode('tags');
+   		$alertType->setEnabled(true);
+   		$alertType->setCanBeUserDisabled(true);
 
-   		 $alertTypeManager->add($alertType);
+        $alertTypeManager->add($alertType);
+            
+        $alertType = new MybbStuff_MyAlerts_Entity_AlertType();
+   		$alertType->setCode('pinned');
+   		$alertType->setEnabled(true);
+   		$alertType->setCanBeUserDisabled(true);
+
+   		$alertTypeManager->add($alertType);
     }
 
 }
@@ -110,15 +126,6 @@ function contests_uninstall() {
 function contests_activate() {
     global $mybb, $db;
 
-    if(!$db->table_exists("contests_user_pinned")) {
-        $db->query("CREATE TABLE `mybb_contests_user_pinned` ( 
-            `upid` int(11) NOT NULL AUTO_INCREMENT,
-            `uid` int(11) NOT NULL,
-            `cid` int(11) NOT NULL,
-            PRIMARY KEY (`upid`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
-    }
-
 }
 
 function contests_deactivate() {
@@ -128,7 +135,7 @@ function contests_deactivate() {
 
 function contests_alerts() {
     global $mybb, $lang;
-  $lang->load('contests');
+    $lang->load('contests');
     /**
      * Alert formatter for my custom alert type.
      */
@@ -174,7 +181,7 @@ function contests_alerts() {
          */
         public function buildShowLink(MybbStuff_MyAlerts_Entity_Alert $alert)
         {
-            return $this->mybb->settings['bburl'] . '/' . 'contests.php?action=view&id=' . $alert->getObjectId();
+            return $this->mybb->settings['bburl'] . '/' . 'contests.php?action=view&cid=' . $alert->getObjectId();
         }
     }
 
@@ -187,6 +194,67 @@ function contests_alerts() {
 
         $formatterManager->registerFormatter(
                 new MybbStuff_MyAlerts_Formatter_TagsFormatter($mybb, $lang, 'tags')
+        );
+    }
+
+  /**
+     * Alert formatter for my custom alert type.
+     */
+    class MybbStuff_MyAlerts_Formatter_PinnedFormatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
+    {
+        /**
+         * Format an alert into it's output string to be used in both the main alerts listing page and the popup.
+         *
+         * @param MybbStuff_MyAlerts_Entity_Alert $alert The alert to format.
+         *
+         * @return string The formatted alert string.
+         */
+        public function formatAlert(MybbStuff_MyAlerts_Entity_Alert $alert, array $outputAlert)
+        {
+            $alertContent = $alert->getExtraDetails();
+            return $this->lang->sprintf(
+                $this->lang->contests_alert_pinned,
+                $outputAlert['from_user'],
+                $alertContent['name'],
+                $outputAlert['dateline']
+            );
+        }
+
+        /**
+         * Init function called before running formatAlert(). Used to load language files and initialize other required
+         * resources.
+         *
+         * @return void
+         */
+        public function init()
+        {
+            if (!$this->lang->contests) {
+                $this->lang->load('contests');
+            }
+        }
+
+        /**
+         * Build a link to an alert's content so that the system can redirect to it.
+         *
+         * @param MybbStuff_MyAlerts_Entity_Alert $alert The alert to build the link for.
+         *
+         * @return string The built alert, preferably an absolute link.
+         */
+        public function buildShowLink(MybbStuff_MyAlerts_Entity_Alert $alert)
+        {
+            return $this->mybb->settings['bburl'] . '/' . 'contests.php?action=view&cid=' . $alert->getObjectId();
+        }
+    }
+
+    if (class_exists('MybbStuff_MyAlerts_AlertFormatterManager')) {
+        $formatterManager = MybbStuff_MyAlerts_AlertFormatterManager::getInstance();
+
+        if (!$formatterManager) {
+            $formatterManager = MybbStuff_MyAlerts_AlertFormatterManager::createInstance($mybb, $lang);
+        }
+
+        $formatterManager->registerFormatter(
+                new MybbStuff_MyAlerts_Formatter_PinnedFormatter($mybb, $lang, 'pinned')
         );
     }
 

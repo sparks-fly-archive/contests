@@ -263,6 +263,7 @@ elseif($mybb->input['action'] == "view") {
 }
 
 elseif($mybb->input['action'] == "browse") {
+    #TODO: Optionen (Team + Merken) in Kurzvorschau einbinden
     require_once MYBB_ROOT."inc/class_parser.php";
     $parser = new postParser;
     // Filter vorbereiten
@@ -366,6 +367,19 @@ elseif($mybb->input['action'] == "pin") {
         "uid" => $mybb->user['uid'],
         "cid" => (int)$cid
     );
+
+    $author = $db->fetch_field($db->query("SELECT uid FROM mybb_contests WHERE cid = '{$cid}'"), "uid");
+    $name = $db->fetch_field($db->query("SELECT name FROM mybb_contests WHERE cid = '{$cid}'"), "name");
+
+    // alert
+    $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('pinned');
+    if ($alertType != NULL && $alertType->getEnabled()) {
+        $alert = new MybbStuff_MyAlerts_Entity_Alert((int)$author, $alertType, (int)$cid);
+        $alert->setExtraDetails([
+            'name' => $name
+        ]); 
+        MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
+    } 
 
     $db->insert_query("contests_user_pinned", $insert_array);
     redirect("contests.php?action=view&cid={$cid}");
