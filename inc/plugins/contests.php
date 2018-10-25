@@ -5,7 +5,7 @@ if(!defined("IN_MYBB")) {
     die("Direct initialization of this file is not allowed.");
 }
 
-# $plugins->add_hook("global_intermediate", "contests_global");
+$plugins->add_hook("global_intermediate", "contests_global");
 if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
 	$plugins->add_hook("global_start", "contests_alerts");
 }
@@ -258,4 +258,22 @@ function contests_alerts() {
         );
     }
 
+}
+
+function contests_global() {
+    global $db, $mybb, $templates, $contests_pinned;
+    $contest_bit = "";
+    $uid = $mybb->user['uid'];
+    $sql = "SELECT * FROM mybb_contests_user_pinned INNER JOIN mybb_contests ON mybb_contests.cid = mybb_contests_user_pinned.cid WHERE mybb_contests_user_pinned.uid = '{$uid}'";
+    $query = $db->query($sql);
+    $i = 0;
+    while($pinned = $db->fetch_array($query)) {
+        $i++;
+        $pinned['deadline'] = date("d.M.Y.", $pinned['endtime']);
+        $pinned['link'] = "<a href=\"contests.php?action=view&cid={$pinned['cid']}\" target=\"_blank\">{$pinned['name']}</a>";
+        eval("\$contest_bit .= \"".$templates->get("index_contests_pinned_bit")."\";");  
+    }
+    if($i > 0) {
+        eval("\$contests_pinned = \"".$templates->get("index_contests_pinned")."\";"); 
+    }
 }

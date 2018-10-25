@@ -263,7 +263,6 @@ elseif($mybb->input['action'] == "view") {
 }
 
 elseif($mybb->input['action'] == "browse") {
-    #TODO: Optionen (Team + Merken) in Kurzvorschau einbinden
     require_once MYBB_ROOT."inc/class_parser.php";
     $parser = new postParser;
     // Filter vorbereiten
@@ -313,6 +312,16 @@ elseif($mybb->input['action'] == "browse") {
         $contest['deadline'] = date("d.m.Y", $contest['endtime']);
         $end_day = date("d", $contest['endtime']);
         $end_month = date("F", $contest['endtime']);
+        if($mybb->usergroup['cancp'] == "1") {
+            eval("\$team_options = \"".$templates->get("contests_team_contest_options")."\";");
+        }
+    
+        $uid = $mybb->user['uid'];
+        $sql = "SELECT upid FROM mybb_contests_user_pinned WHERE cid = '$contest[cid]' AND uid = '{$uid}'";
+        $upid = $db->fetch_field($db->query($sql), "upid");
+        if($upid) {
+            eval("\$contest_pin = \"".$templates->get("contests_view_contest_unpin")."\";");
+        } else { eval("\$contest_pin = \"".$templates->get("contests_view_contest_pin")."\";"); }
         eval("\$contest_bit .= \"".$templates->get("contests_view_contests_bit")."\";");
     }
 
@@ -405,7 +414,7 @@ elseif($mybb->input['action'] == "pinned") {
     $perpage = 10;
     $page = intval($mybb->input['page']);
     if($page) {
-        $start = ($page-1) *$perpage;
+        $start = ($page-1)*$perpage;
     }
     else {
         $start = 0;

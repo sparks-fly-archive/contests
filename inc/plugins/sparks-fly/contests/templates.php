@@ -588,6 +588,38 @@ function contests_templates_install() {
   );
   $db->insert_query("templates", $contests_view_pinned);
 
+  $index_contests_pinned = array(
+    'title'		=> 'index_contests_pinned',
+    'template'	=> $db->escape_string('<table class="tborder" cellspacing="3" cellpadding="3">
+	<tr>
+		<td class="thead" colspan="3">Gemerkte Contests</td>
+	</tr>
+	<tr>
+		<td class="tcat">Name</td>
+		<td class="tcat">Deadline</td>
+		<td class="tcat">Optionen</td>
+	</tr>
+	{$contest_bit}
+</table><br />'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $index_contests_pinned);
+
+  $index_contests_pinned_bit = array(
+    'title'		=> 'index_contests_pinned_bit',
+    'template'	=> $db->escape_string('<tr>
+	<td class="trow1 smalltext">{$pinned[\'link\']}</td>
+	<td class="trow1 smalltext">{$pinned[\'deadline\']}</td>
+	<td class="trow1 smalltext"><a href="contests.php?action=unpin&cid={$pinned[\'cid\']}">Nicht weiter merken</a></td>
+</tr>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $index_contests_pinned_bit);
+
   /* $template_name = array(
     'title'		=> 'template_name',
     'template'	=> $db->escape_string('INHALT'),
