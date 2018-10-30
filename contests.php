@@ -48,15 +48,32 @@ if(!$mybb->input['action']) {
 
 elseif($mybb->input['action'] == "options") {
 
+    $category_bit = "";
+    $categories = array("graphics" => "Grafik", "coding" => "Coding", "writing" => "Writing");
+    foreach($categories as $key => $value) {
+        $sql = "SELECT uoid FROM mybb_contests_user_options WHERE uid = '$uid' AND categories LIKE '%$key%'";
+        $uoid = $db->fetch_field($db->query($sql), "uoid");
+        $checked = "";
+        if($uoid) {
+            $checked = "checked";
+        }
+        $category_bit .= "<input type=\"checkbox\" name=\"category[]\" value=\"{$key}\" {$checked}> {$value} ";
+    }    
+
     eval("\$page = \"".$templates->get("contests_user_options")."\";");
     output_page($page);
 }
 
 elseif($mybb->input['action'] == "do_options") {
     $tags = $mybb->get_input('tags');
+    $categories = $mybb->input['category'];
+    $cats = implode(", ", $categories);
+    $newest = $mybb->get_input('newest');
     $insert_array = array(
         "uid" => (int)$mybb->user['uid'],
-        "tags" => $db->escape_string($tags)
+        "tags" => $db->escape_string($tags),
+        "categories" => $cats,
+        "newest" => $newest
     );
     $db->delete_query("contests_user_options", "uid = '$uid'");
     $db->insert_query("contests_user_options", $insert_array);
@@ -185,6 +202,7 @@ elseif($mybb->input['action'] == "do_add_contest") {
     }
     
 	$insert_array = array(
+        "cid" => $cid,
         "uid" => (int)$mybb->user['uid'],
         "category" => $db->escape_string($category),
 		"type" => $db->escape_string($type),
@@ -226,6 +244,7 @@ elseif($mybb->input['action'] == "do_add_contest") {
 elseif($mybb->input['action'] == "view") {
     require_once MYBB_ROOT."inc/class_parser.php";
     $parser = new postParser;
+    $timestamp = TIME_NOW;
     // Contest-Informationen
     $cid = (int)$mybb->get_input(cid);
     $sql = "SELECT * FROM mybb_contests WHERE cid = '$cid'";
@@ -258,6 +277,10 @@ elseif($mybb->input['action'] == "view") {
         eval("\$contest_pin = \"".$templates->get("contests_view_contest_unpin")."\";");
     } else { eval("\$contest_pin = \"".$templates->get("contests_view_contest_pin")."\";"); }
 
+    if($contest['endtime'] > $timestamp && $uid) {
+        eval("\$participate = \"".$templates->get("contests_view_contest_participate")."\";");
+    }
+
     eval("\$page = \"".$templates->get("contests_view_contest")."\";");
     output_page($page);   
 }
@@ -278,7 +301,7 @@ elseif($mybb->input['action'] == "browse") {
     // Multipage
     $query = $db->simple_select("contests", "COUNT(*) AS numcontests", "category LIKE '%$category%' AND type LIKE '%$type%' AND tags LIKE '%$tag%' AND endtime > '$timestamp'");
     $contestcount = $db->fetch_field($query, "numcontests");
-    $perpage = 10;
+    $perpage = 5;
     $page = intval($mybb->input['page']);
     if($page) {
         $start = ($page-1) *$perpage;
@@ -294,7 +317,7 @@ elseif($mybb->input['action'] == "browse") {
         $upper = $contestcount;
     }
 
-    $multipage = multipage($contestcount, $perpage, $page, $_SERVER['PHP_SELF']."?action=browse");
+    $multipage = multipage($contestcount, $perpage, $page, $_SERVER['PHP_SELF']."?action=browse&category={$category}&type={$type}&tag={$tag}");
 
     $sql = "SELECT * FROM mybb_contests WHERE category LIKE '%$category%' AND type LIKE '%$type%' AND tags LIKE '%$tag%' AND endtime > '$timestamp' ORDER BY endtime ASC LIMIT $start, $perpage";
     $query = $db->query($sql);
@@ -325,7 +348,7 @@ elseif($mybb->input['action'] == "browse") {
         eval("\$contest_bit .= \"".$templates->get("contests_view_contests_bit")."\";");
     }
 
-    $sql = "SELECT DISTINCT type FROM mybb_contests WHERE endtime > '$timestamp' ORDER BY type ASC";
+    $sql = "SELECT DISTINCT type FROM mybb_contests WHERE endtime > '$timestamp' AND category LIKE '%$category%' ORDER BY type ASC";
     $query = $db->query($sql);
     while($types = $db->fetch_array($query)) {
         $types_checked = "";
@@ -336,7 +359,8 @@ elseif($mybb->input['action'] == "browse") {
     }
 
     $query = $db->query("SELECT tags FROM mybb_contests
-    WHERE tags != ''");
+    WHERE tags != ''
+    AND category LIKE '%$category%'");
 
     while($tag_query = $db->fetch_array($query)) {
             $tag_array .= $tag_query['tags'].", ";
@@ -396,11 +420,11 @@ elseif($mybb->input['action'] == "pin") {
 
 elseif($mybb->input['action'] == "unpin") {
     $cid = $mybb->get_input('cid');
-    $userid = $mybb->user['uid'];
+    $uid = $mybb->user['uid'];
     $sql = "SELECT uid FROM mybb_contests_user_pinned WHERE cid = '{$cid}' AND uid = '{$userid}'";
-    $uid = $db->fetch_field($db->query($sql), "uid");
+    $userid = $db->fetch_field($db->query($sql), "uid");
     if($uid == $mybb->user['uid']) {
-        $db->delete_query("contests_user_pinned", "cid = '{$cid}' AND uid = '{$userid}'");
+        $db->delete_query("contests_user_pinned", "cid = '{$cid}' AND uid = '{$uid}'");
     }
     redirect("contests.php?action=view&cid={$cid}");
 }
@@ -435,6 +459,15 @@ elseif($mybb->input['action'] == "pinned") {
         $contest['deadline'] = date("d.m.Y", $contest['endtime']);
         $end_day = date("d", $contest['endtime']);
         $end_month = date("F", $contest['endtime']);
+        if($mybb->usergroup['cancp'] == "1") {
+            eval("\$team_options = \"".$templates->get("contests_team_contest_options")."\";");
+        }
+    
+        $sql = "SELECT upid FROM mybb_contests_user_pinned WHERE cid = '$contest[cid]' AND uid = '{$uid}'";
+        $upid = $db->fetch_field($db->query($sql), "upid");
+        if($upid) {
+            eval("\$contest_pin = \"".$templates->get("contests_view_contest_unpin")."\";");
+        } else { eval("\$contest_pin = \"".$templates->get("contests_view_contest_pin")."\";"); }
         eval("\$contest_bit .= \"".$templates->get("contests_view_contests_bit")."\";");        
     }
     eval("\$page = \"".$templates->get("contests_view_pinned")."\";");

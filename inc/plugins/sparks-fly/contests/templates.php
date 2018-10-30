@@ -263,11 +263,34 @@ function contests_templates_install() {
                     <td class="trow2" colspan="2">
                         <table cellspacing="0" cellpadding="0" width="100%">
                             <tr>
-                                <td width="50%"><strong>Tags:</strong><br />
+                                <td width="50%" class="trow2"><strong>Tags:</strong><br />
 									<span class="smalltext">Contests mit welchen Tags interessieren dich besonders?</span>
                                 </td>
-                                <td class="trow1" width="60%" align="center">
+                                <td class="trow2" width="60%" align="center">
                                   <input type="text" name="tags" size="25" value="{$options[\'tags\']}" />
+                                </td>
+                            </tr>
+							<tr>
+								<td class="tcat" colspan="2">Contest-Übersicht</td>
+							</tr>
+                            <tr>
+                                <td width="50%" class="trow1"><strong>Neueste Contests auf dem Index:</strong><br />
+									<span class="smalltext">Sollen die Contest-Inhalte auf dem Index/dem Header angezeigt werden?</span>
+                                </td>
+                                <td class="trow1" width="60%" align="center">
+									<select name="newest">
+										<option value="">Auswählen</option>
+										<option value="1">Ja</option>
+										<option value="0">Nein</option>
+									</select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="50%" class="trow2"><strong>Bereiche auf dem Index:</strong><br />
+									<span class="smalltext">Offene Contests welcher Bereiche sollen auf dem Index angezeigt werden?</span>
+                                </td>
+                                <td class="trow2" width="60%" align="center">
+									{$category_bit}
                                 </td>
                             </tr>
                         </table>
@@ -386,7 +409,7 @@ function contests_templates_install() {
 	<table border="0" cellspacing="5" cellpadding="{$theme[\'tablespace\']}"  class="tborder">
 		<tr>
 			<td class="trow2" colspan="2">
-				<div class="contest_options">{$contest_pin} {$team_options}</div>
+				<div class="contest_options contests_buttons">{$contest_pin} {$team_options}</div>
 			</td>
 		</tr>
 		<tr>
@@ -523,7 +546,7 @@ function contests_templates_install() {
 
   $contests_team_contest_options = array(
     'title'		=> '$contests_team_contest_options',
-    'template'	=> $db->escape_string('| <a href="contests.php?action=add_contest&cid={$contest[\'cid\']}">Contest bearbeiten</a>'),
+    'template'	=> $db->escape_string('<a href="contests.php?action=add_contest&cid={$contest[\'cid\']}"><i class="fa fa-pencil-square-o" aria-hidden="true"></i> Contest bearbeiten</a>'),
     'sid'		=> '-1',
     'version'	=> '',
     'dateline'	=> TIME_NOW
@@ -532,7 +555,7 @@ function contests_templates_install() {
 
   $contests_view_contest_pin = array(
     'title'		=> '$contests_view_contest_pin',
-    'template'	=> $db->escape_string('<a href="contests.php?action=pin&cid={$contest[\'cid\']}">Contest Merken</a>'),
+    'template'	=> $db->escape_string('<a href="contests.php?action=pin&cid={$contest[\'cid\']}"><i class="fa fa-thumb-tack" aria-hidden="true"></i> Contest Merken</a>'),
     'sid'		=> '-1',
     'version'	=> '',
     'dateline'	=> TIME_NOW
@@ -541,7 +564,7 @@ function contests_templates_install() {
 
   $contests_view_contest_unpin = array(
     'title'		=> '$contests_view_contest_unpin',
-    'template'	=> $db->escape_string('<a href="contests.php?action=unpin&cid={$contest[\'cid\']}">Nicht weiter merken</a>'),
+    'template'	=> $db->escape_string('<a href="contests.php?action=unpin&cid={$contest[\'cid\']}"><i class="fa fa-thumb-tack" aria-hidden="true"></i> Nicht weiter merken</a>'),
     'sid'		=> '-1',
     'version'	=> '',
     'dateline'	=> TIME_NOW
@@ -588,27 +611,8 @@ function contests_templates_install() {
   );
   $db->insert_query("templates", $contests_view_pinned);
 
-  $index_contests_pinned = array(
-    'title'		=> 'index_contests_pinned',
-    'template'	=> $db->escape_string('<table class="tborder" cellspacing="3" cellpadding="3">
-	<tr>
-		<td class="thead" colspan="3">Gemerkte Contests</td>
-	</tr>
-	<tr>
-		<td class="tcat">Name</td>
-		<td class="tcat">Deadline</td>
-		<td class="tcat">Optionen</td>
-	</tr>
-	{$contest_bit}
-</table><br />'),
-    'sid'		=> '-1',
-    'version'	=> '',
-    'dateline'	=> TIME_NOW
-  );
-  $db->insert_query("templates", $index_contests_pinned);
-
-  $index_contests_pinned_bit = array(
-    'title'		=> 'index_contests_pinned_bit',
+  $header_contests_pinned_bit = array(
+    'title'		=> 'header_contests_pinned_bit',
     'template'	=> $db->escape_string('<tr>
 	<td class="trow1 smalltext">{$pinned[\'link\']}</td>
 	<td class="trow1 smalltext">{$pinned[\'deadline\']}</td>
@@ -618,7 +622,37 @@ function contests_templates_install() {
     'version'	=> '',
     'dateline'	=> TIME_NOW
   );
-  $db->insert_query("templates", $index_contests_pinned_bit);
+  $db->insert_query("templates", $header_contests_pinned_bit);
+
+  $header_contests = array(
+    'title'		=> 'header_contests',
+    'template'	=> $db->escape_string('	<tr>
+    <td style="width: 25%" class="td1">Offene Contests</td>
+    <td style="width: 25%" class="td2">5 Neueste Contest-Teilnahmen</td>
+    <td style="width: 25%" class="td1">5 Neueste Abstimmungen</td>
+    <td style="width: 25%" class="td2">Deine gemerkten Contests</td>
+    </tr>
+    <tr>
+        <td><div class="td3"><table border="0" cellspacing="3" cellpadding="5" class="tborder newest" style="width: 100%;">{$contests_bit}</table></div></td>
+        <td><div class="td3"><table border="0" cellspacing="3" cellpadding="5" class="tborder newest" style="width: 100%;"></table></div></td>
+        <td><div class="td3"><table border="0" cellspacing="3" cellpadding="5" class="tborder newest" style="width: 100%;"></table></div></td>
+        <td><div class="td3"><table border="0" cellspacing="3" cellpadding="5" class="tborder newest" style="width: 100%;">{$contests_pinned}</table></div>
+        </td>
+        </tr>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $header_contests);
+
+  $contests_view_contest_participate = array(
+    'title'		=> 'contests_view_contest_participate',
+    'template'	=> $db->escape_string('<a href="contests.php?action=participate&cid={$contest[\'cid\']}"><i class="fa fa-reply" aria-hidden="true"></i> Teilnehmen</a>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_contest_participate);
 
   /* $template_name = array(
     'title'		=> 'template_name',

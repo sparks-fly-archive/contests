@@ -47,6 +47,8 @@ function contests_install() {
             `uoid` int(11) NOT NULL AUTO_INCREMENT,
             `uid` int(11) NOT NULL,
             `tags` text NOT NULL,
+            `categories` text NOT NULL,
+            `newest` tinyint(1) NOT NULL,
             PRIMARY KEY (`uoid`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
     }
@@ -261,19 +263,44 @@ function contests_alerts() {
 }
 
 function contests_global() {
-    global $db, $mybb, $templates, $contests_pinned;
+    global $db, $mybb, $templates, $contests_bit, $pinned_bit, $contests;
+
     $contest_bit = "";
+    $timestamp = TIME_NOW;
     $uid = $mybb->user['uid'];
-    $sql = "SELECT * FROM mybb_contests_user_pinned INNER JOIN mybb_contests ON mybb_contests.cid = mybb_contests_user_pinned.cid WHERE mybb_contests_user_pinned.uid = '{$uid}'";
-    $query = $db->query($sql);
-    $i = 0;
-    while($pinned = $db->fetch_array($query)) {
-        $i++;
-        $pinned['deadline'] = date("d.M.Y.", $pinned['endtime']);
-        $pinned['link'] = "<a href=\"contests.php?action=view&cid={$pinned['cid']}\" target=\"_blank\">{$pinned['name']}</a>";
-        eval("\$contest_bit .= \"".$templates->get("index_contests_pinned_bit")."\";");  
-    }
-    if($i > 0) {
-        eval("\$contests_pinned = \"".$templates->get("index_contests_pinned")."\";"); 
+    $sql = "SELECT newest FROM mybb_contests_user_options WHERE uid = '$uid'";
+    $newest = $db->fetch_field($db->query($sql), "newest");
+    if($newest == 1 or !$newest) {
+        $sql = "SELECT * FROM mybb_contests_user_pinned INNER JOIN mybb_contests ON mybb_contests.cid = mybb_contests_user_pinned.cid WHERE mybb_contests_user_pinned.uid = '{$uid}'";
+        $query = $db->query($sql);
+        $i = 0;
+        while($pinned = $db->fetch_array($query)) {
+            $i++;
+            $pinned['deadline'] = date("d.m.Y", $pinned['endtime']);
+            $pinned['link'] = "<a href=\"contests.php?action=view&cid={$pinned['cid']}\" target=\"_blank\">{$pinned['name']}</a>";
+            eval("\$pinned_bit .= \"".$templates->get("header_contests_pinned_bit")."\";");  
+        }
+
+        $uid = $mybb->user['uid'];
+    
+        $sql = "SELECT categories FROM mybb_contests_user_options WHERE uid = '$uid'";
+        $categories = $db->fetch_field($db->query($sql), "categories");
+        $cats = explode(", ", $categories);
+        foreach($cats as $cat) {
+            $catview .= "'$cat',";
+        }
+        $catview = rtrim($catview,',');
+        if(!$categories) {
+            $catview = "'coding', 'graphics', 'writing'";
+        }
+
+        $sql = "SELECT cid, type, name, endtime FROM mybb_contests WHERE visibility = '1'  AND category IN({$catview}) AND endtime > '$timestamp' ORDER by cast(endtime AS signed) DESC";
+        $query = $db->query($sql);
+        while($newest_contest = $db->fetch_array($query)) {
+            $newest_contest['deadline'] = date("d.m.Y", $newest_contest['endtime']);
+            $newest_contest['url'] = "<a href=\"contests.php?action=view&cid={$newest_contest['cid']}\">{$newest_contest['name']}</a>";
+            eval("\$contests_bit .= \"".$templates->get("header_contests_newest_contests")."\";");    
+        }
+        eval("\$contests = \"".$templates->get("header_contests")."\";"); 
     }
 }
