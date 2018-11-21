@@ -24,6 +24,12 @@ switch($mybb->input['action'])
     break;
 	case "browse":
 		add_breadcrumb("Contests durchsuchen");
+    break;
+	case "pinned":
+		add_breadcrumb("Gemerkte Contests");
+    break;
+	case "participate":
+		add_breadcrumb("An Contest teilnehmen");
 	break;
 }
 

@@ -409,7 +409,7 @@ function contests_templates_install() {
 	<table border="0" cellspacing="5" cellpadding="{$theme[\'tablespace\']}"  class="tborder">
 		<tr>
 			<td class="trow2" colspan="2">
-				<div class="contest_options contests_buttons">{$contest_pin} {$team_options}</div>
+				<div class="contest_options contests_buttons">{$participate} {$contest_pin} {$team_options}</div>
 			</td>
 		</tr>
 		<tr>
@@ -545,7 +545,7 @@ function contests_templates_install() {
   $db->insert_query("templates", $contests_view_contests_bit);
 
   $contests_team_contest_options = array(
-    'title'		=> '$contests_team_contest_options',
+    'title'		=> 'contests_team_contest_options',
     'template'	=> $db->escape_string('<a href="contests.php?action=add_contest&cid={$contest[\'cid\']}"><i class="fa fa-pencil-square-o" aria-hidden="true"></i> Contest bearbeiten</a>'),
     'sid'		=> '-1',
     'version'	=> '',
@@ -554,7 +554,7 @@ function contests_templates_install() {
   $db->insert_query("templates", $contests_team_contest_options);
 
   $contests_view_contest_pin = array(
-    'title'		=> '$contests_view_contest_pin',
+    'title'		=> 'contests_view_contest_pin',
     'template'	=> $db->escape_string('<a href="contests.php?action=pin&cid={$contest[\'cid\']}"><i class="fa fa-thumb-tack" aria-hidden="true"></i> Contest Merken</a>'),
     'sid'		=> '-1',
     'version'	=> '',
@@ -563,7 +563,7 @@ function contests_templates_install() {
   $db->insert_query("templates", $contests_view_contest_pin);
 
   $contests_view_contest_unpin = array(
-    'title'		=> '$contests_view_contest_unpin',
+    'title'		=> 'contests_view_contest_unpin',
     'template'	=> $db->escape_string('<a href="contests.php?action=unpin&cid={$contest[\'cid\']}"><i class="fa fa-thumb-tack" aria-hidden="true"></i> Nicht weiter merken</a>'),
     'sid'		=> '-1',
     'version'	=> '',
@@ -667,5 +667,5 @@ function contests_templates_install() {
 
 function contests_templates_uninstall() {
     global $db;
-    $db->delete_query('templates', "title LIKE 'contests%'");
+    $db->delete_query('templates', "title LIKE '%contests%'");
 }
