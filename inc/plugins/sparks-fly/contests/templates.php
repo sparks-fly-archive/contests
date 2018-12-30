@@ -409,7 +409,7 @@ function contests_templates_install() {
 	<table border="0" cellspacing="5" cellpadding="{$theme[\'tablespace\']}"  class="tborder">
 		<tr>
 			<td class="trow2" colspan="2">
-				<div class="contest_options contests_buttons">{$participate} {$contest_pin} {$team_options}</div>
+				<div class="contest_options contests_buttons"> {$participate} {$delete_participate} {$contest_pin} {$team_options}</div>
 			</td>
 		</tr>
 		<tr>
@@ -430,7 +430,8 @@ function contests_templates_install() {
 				</div>
 			</td>
 		</tr>
-	</table>            
+	</table>  
+		{$replies}
     </div>
     </td>
     </tr>
@@ -719,6 +720,125 @@ function contests_templates_install() {
     'dateline'	=> TIME_NOW
   );
   $db->insert_query("templates", $contests_participate);
+
+  $contests_view_contest_replies = array(
+    'title'		=> 'contests_view_contest_replies',
+    'template'	=> $db->escape_string('<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+    <tr>
+    <td class="thead">Teilnahmen</td>
+    </tr>
+	{$replies_bit}
+</table>
+<br /><center>{$multipage}</center>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_contest_replies);
+
+  $contests_view_contest_replies_bit = array(
+    'title'		=> 'contests_view_contest_replies_bit',
+    'template'	=> $db->escape_string('<tr>
+	<td class="tcat">
+		Teilnahme von {$ruser[\'username\']} &bull; {$reply[\'posttime\']}
+	</td>
+</tr>
+<tr>
+	<td class="trow2">
+		<center><br />{$reply[\'message\']}
+		<br />
+			{$reply[\'code\']}</center>
+	</td>
+</tr>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_contest_replies_bit);
+
+  $contests_view_contest_participate_deletebutton = array(
+    'title'		=> 'contests_view_contest_participate_deletebutton',
+    'template'	=> $db->escape_string('<a href="contests.php?action=deletereply&rid={$ownreply}"><i class="fa fa-cross" aria-hidden="true"></i> Beitrag löschen</a>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_contest_participate_deletebutton);
+
+  $contests_view_contest_participate_editbutton = array(
+    'title'		=> 'contests_view_contest_participate_editbutton',
+    'template'	=> $db->escape_string('<a href="contests.php?action=editreply&rid={$ownreply}"><i class="fa fa-reply" aria-hidden="true"></i> Beitrag bearbeiten</a>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_view_contest_participate_editbutton);
+
+  $contests_participate_edit = array(
+    'title'		=> 'contests_participate_edit',
+    'template'	=> $db->escape_string('<html>
+    <head>
+    <title>Storming Gates - Contests - Teilnahme an {$contest[\'name\']} bearbeiten</title>
+    {$headerinclude}
+    </head>
+    <body>
+    {$header}
+    <table width="100%" border="0" align="center">
+    <tr>
+    <td width="23%" valign="top">
+    {$contests_nav}
+    </td>
+    <td valign="top">
+    <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+    <tr>
+    <td class="thead" colspan="{$colspan}"><strong>Teilnahme an {$contest[\'name\']} bearbeiten</strong></td>
+    </tr>
+    <tr>
+    <td class="trow2" style="padding: 10px; text-align: justify;">
+    <div style="width: 95%; margin: auto; padding: 8px;" class="trow1">
+	<table border="0" cellspacing="5" cellpadding="{$theme[\'tablespace\']}"  class="tborder">
+		<tr>
+			<td class="trow2" id="sg-profile-avatar" valign="middle">
+				{$author[\'avatarlink\']}
+			</td>
+			<td class="trow2 sg-profile-data" valign="middle">
+				    <li><span><i class="fa fa-bars" aria-hidden="true"></i> Kategorie</span> <data>{$contest[\'category\']}</data>
+					<li><span><i class="fa fa-question" aria-hidden="true"></i> Contest-Art</span> <data>{$contest[\'type\']}</data>
+					<li><span>&bull; Tags</span> <data>{$contest[\'tags\']}</data>
+				<li><span><i class="fa fa-calendar" aria-hidden="true"></i> Deadline</span> <data>{$contest[\'deadline\']}</data>
+			</td>
+		</tr>
+		<tr>
+			<td class="trow2" colspan="2">
+				<div id="contest_content">
+					{$contest[\'description\']}
+				</div>
+			</td>
+		</tr>
+	</table>            
+<form method="post" enctype="multipart/form-data" name="input">
+<center><textarea id="message" name="message" rows="10" cols="70" tabindex="2" >{$reply[\'message\']}</textarea>
+{$codebuttons}
+{$multiquote_external}</center>
+<br /> <center><input type="submit" class="button" name="editreply" value="Beitrag bearbeiten" tabindex="4" /></center>
+<input type="hidden" name="action" value="do_editreply" />
+	<input type="hidden" name="rid" value="{$reply[\'rid\']}" />
+</form>        
+    </div>
+    </td>
+    </tr>
+    </table>
+    </td>
+    </tr>
+    </table>
+    {$footer}
+    </body>
+    </html>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_participate_edit); 
 
   /* $template_name = array(
     'title'		=> 'template_name',
