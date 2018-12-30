@@ -283,8 +283,49 @@ elseif($mybb->input['action'] == "view") {
         eval("\$contest_pin = \"".$templates->get("contests_view_contest_unpin")."\";");
     } else { eval("\$contest_pin = \"".$templates->get("contests_view_contest_pin")."\";"); }
 
+    $sql = "SELECT rid FROM mybb_contests_replies WHERE uid = '$uid' AND cid = '$contest[cid]'";
+    $ownreply = $db->fetch_field($db->query($sql), "rid");
     if($contest['endtime'] > $timestamp && $uid) {
         eval("\$participate = \"".$templates->get("contests_view_contest_participate")."\";");
+    } if($ownreply && $contest['endtime'] > $timestamp && $uid) {
+        eval("\$participate = \"".$templates->get("contests_view_contest_participate_editbutton")."\";");
+        eval("\$delete_participate = \"".$templates->get("contests_view_contest_participate_deletebutton")."\";");
+    }
+
+    // Contest Teilnahmen
+    // Multipage
+    $query = $db->simple_select("contests_replies", "COUNT(*) AS numreplies", "cid = '$contest[cid]'");
+    $repliescount = $db->fetch_field($query, "numreplies");
+    $perpage = 5;
+    $page = intval($mybb->input['page']);
+    if($page) {
+        $start = ($page-1) *$perpage;
+    }
+    else {
+        $start = 0;
+        $page = 1;
+    }
+    $end = $start + $perpage;
+    $lower = $start+1;
+    $upper = $end;
+    if($upper > $repliescount) {
+        $upper = $repliescount;
+    }
+
+    $multipage = multipage($repliescount, $perpage, $page, $_SERVER['PHP_SELF']."?action=view&cid={$contest['cid']}");
+    $sql = "SELECT * FROM mybb_contests_replies WHERE cid = '$contest[cid]' ORDER BY rid DESC LIMIT $start, $perpage";
+    $query = $db->query($sql);
+    if(mysqli_num_rows($query) > 0) {
+        while($reply = $db->fetch_array($query)) {
+            $reply['message'] = $parser->parse_message($reply['message'], $options);
+            $ruser = get_user($reply['uid']);
+            if($mybb->usergroup['cancp'] == 1) {
+                $reply['code'] = "<textarea width=\"500px;\">{$reply['message']}</textarea>";
+            }
+            $reply['posttime'] = date("d.m.Y", $reply['posttime']);
+            eval("\$replies_bit .= \"".$templates->get("contests_view_contest_replies_bit")."\";");  
+        }
+        eval("\$replies = \"".$templates->get("contests_view_contest_replies")."\";"); 
     }
 
     eval("\$page = \"".$templates->get("contests_view_contest")."\";");
@@ -478,4 +519,251 @@ elseif($mybb->input['action'] == "pinned") {
     }
     eval("\$page = \"".$templates->get("contests_view_pinned")."\";");
     output_page($page);     
+}
+
+elseif($mybb->input['action'] == "participate") {
+    require_once MYBB_ROOT."inc/class_parser.php";
+    $parser = new postParser;
+    $timestamp = TIME_NOW;
+    $cid = (int)$mybb->get_input('cid');
+    $sql = "SELECT * FROM mybb_contests WHERE cid = '$cid'";
+    $query = $db->query($sql);
+    $contest = $db->fetch_array($query);
+
+    $timestamp = TIME_NOW;
+    if(!$mybb->user['uid'] OR $timestamp > $contest['endtime']) {
+        error_no_permission();
+    }
+
+    $author = get_user($contest['uid']);
+    $author['avatarlink'] = "<a href=\"member.php?action=profile&uid={$author['uid']}\" target=\"_blank\"><img src=\"{$author['avatar']}\" width=\"100px\"/></a>";
+    $contest['deadline'] = date("d.m.Y", $contest['endtime']);
+
+    $options = array(
+		"allow_html" => 1,
+		"allow_mycode" => 1,
+		"allow_smilies" => 1,
+		"allow_imgcode" => 1,
+		"filter_badwords" => 0,
+		"nl2br" => 1,
+		"allow_videocode" => 1,
+	);
+	
+    $contest['description'] = $parser->parse_message($contest['description'], $options);
+
+    $codebuttons = build_mycode_inserter("message", "0");
+
+    $bind = "message";
+	if($codebuttons)
+	{
+		$lang->load('markitup');
+		$editor_lang_strings = array(
+			"editor_title_bold",
+			"editor_title_italic",
+			"editor_title_underline",
+			"editor_title_left",
+			"editor_title_center",
+			"editor_title_right",
+			"editor_title_justify",
+			"editor_title_numlist",
+			"editor_title_bulletlist",
+			"editor_title_image",
+			"editor_title_hyperlink",
+			"editor_title_email",
+			"editor_title_quote",
+			"editor_title_code",
+			"editor_title_php",
+			"editor_enter_list_item",
+			"editor_enter_url",
+			"editor_enter_url_title",
+			"editor_enter_email",
+			"editor_enter_email_title",
+			"editor_enter_image",
+			"editor_enter_video_url",
+			"editor_video_dailymotion",
+			"editor_video_facebook",
+			"editor_video_liveleak",
+			"editor_video_metacafe",
+			"editor_video_veoh",
+			"editor_video_vimeo",
+			"editor_video_yahoo",
+			"editor_video_youtube",
+			"editor_size_xx_small",
+			"editor_size_x_small",
+			"editor_size_small",
+			"editor_size_medium",
+			"editor_size_large",
+			"editor_size_x_large",
+			"editor_size_xx_large",
+			"editor_font",
+			"editor_size",
+			"editor_color"
+		);
+		$markitup_language = "var markitup_language = {\n";
+		foreach($editor_lang_strings as $key => $lang_string)
+		{
+			// Strip initial editor_ off language string if it exists - ensure case sensitivity does not matter.
+			$js_lang_string = preg_replace("#^editor_#i", "", $lang_string);
+			$string = str_replace("\"", "\\\"", $lang->$lang_string);
+			$markitup_language .= "\t{$js_lang_string}: \"{$string}\"";
+
+			if(isset($editor_lang_strings[$key+1]))
+			{
+				$markitup_language .= ",";
+			}
+
+			$markitup_language .= "\n";
+		}
+		$markitup_language .= "};";
+		eval("\$codebuttons = \"".$templates->get("markitup")."\";");
+	}
+
+    eval("\$page = \"".$templates->get("contests_participate")."\";");
+    output_page($page);   
+}
+
+elseif($mybb->input['action'] == "do_participate") {
+    $cid = $mybb->get_input('cid');
+    $message = $mybb->get_input('message');
+    $uid = $mybb->user['uid'];
+    $insert_array = array(
+        "cid" => (int)$cid,
+        "uid" => (int)$uid,
+        "message" => $db->escape_string($message),
+        "posttime" => TIME_NOW,
+        "edittime" => TIME_NOW,
+        "visibility" => 1
+    );
+    $db->insert_query("contests_replies", $insert_array);
+    redirect("contests.php?action=view&cid={$cid}");
+}
+
+elseif($mybb->input['action'] == "editreply") {
+    require_once MYBB_ROOT."inc/class_parser.php";
+    $parser = new postParser;
+    $timestamp = TIME_NOW;
+    $rid = (int)$mybb->get_input('rid');
+    $sql = "SELECT * FROM mybb_contests_replies WHERE rid = '$rid'";
+    $query = $db->query($sql);
+    $reply = $db->fetch_array($query);
+    $sql = "SELECT * FROM mybb_contests WHERE cid = '{$reply['cid']}'";
+    $query = $db->query($sql);
+    $contest = $db->fetch_array($query);
+
+    $timestamp = TIME_NOW;
+    if(!$mybb->user['uid'] OR $timestamp > $contest['endtime'] OR $reply['uid'] != $mybb->user['uid']) {
+        error_no_permission();
+    }
+
+    $author = get_user($contest['uid']);
+    $author['avatarlink'] = "<a href=\"member.php?action=profile&uid={$author['uid']}\" target=\"_blank\"><img src=\"{$author['avatar']}\" width=\"100px\"/></a>";
+    $contest['deadline'] = date("d.m.Y", $contest['endtime']);
+
+    $options = array(
+		"allow_html" => 1,
+		"allow_mycode" => 1,
+		"allow_smilies" => 1,
+		"allow_imgcode" => 1,
+		"filter_badwords" => 0,
+		"nl2br" => 1,
+		"allow_videocode" => 1,
+	);
+	
+    $contest['description'] = $parser->parse_message($contest['description'], $options);
+
+    $codebuttons = build_mycode_inserter("message", "0");
+
+    $bind = "message";
+	if($codebuttons)
+	{
+		$lang->load('markitup');
+		$editor_lang_strings = array(
+			"editor_title_bold",
+			"editor_title_italic",
+			"editor_title_underline",
+			"editor_title_left",
+			"editor_title_center",
+			"editor_title_right",
+			"editor_title_justify",
+			"editor_title_numlist",
+			"editor_title_bulletlist",
+			"editor_title_image",
+			"editor_title_hyperlink",
+			"editor_title_email",
+			"editor_title_quote",
+			"editor_title_code",
+			"editor_title_php",
+			"editor_enter_list_item",
+			"editor_enter_url",
+			"editor_enter_url_title",
+			"editor_enter_email",
+			"editor_enter_email_title",
+			"editor_enter_image",
+			"editor_enter_video_url",
+			"editor_video_dailymotion",
+			"editor_video_facebook",
+			"editor_video_liveleak",
+			"editor_video_metacafe",
+			"editor_video_veoh",
+			"editor_video_vimeo",
+			"editor_video_yahoo",
+			"editor_video_youtube",
+			"editor_size_xx_small",
+			"editor_size_x_small",
+			"editor_size_small",
+			"editor_size_medium",
+			"editor_size_large",
+			"editor_size_x_large",
+			"editor_size_xx_large",
+			"editor_font",
+			"editor_size",
+			"editor_color"
+		);
+		$markitup_language = "var markitup_language = {\n";
+		foreach($editor_lang_strings as $key => $lang_string)
+		{
+			// Strip initial editor_ off language string if it exists - ensure case sensitivity does not matter.
+			$js_lang_string = preg_replace("#^editor_#i", "", $lang_string);
+			$string = str_replace("\"", "\\\"", $lang->$lang_string);
+			$markitup_language .= "\t{$js_lang_string}: \"{$string}\"";
+
+			if(isset($editor_lang_strings[$key+1]))
+			{
+				$markitup_language .= ",";
+			}
+
+			$markitup_language .= "\n";
+		}
+		$markitup_language .= "};";
+		eval("\$codebuttons = \"".$templates->get("markitup")."\";");
+	}
+
+    eval("\$page = \"".$templates->get("contests_participate_edit")."\";");
+    output_page($page);   
+}
+
+elseif($mybb->input['action'] == "do_editreply") {
+    $rid = $mybb->get_input('rid');
+    $sql = "SELECT * FROM mybb_contests_replies WHERE rid = '$rid'";
+    $query = $db->query($sql);
+    $reply = $db->fetch_array($query);    
+    $message = $mybb->get_input('message');
+    $uid = $mybb->user['uid'];
+    $insert_array = array(
+        "message" => $db->escape_string($message),
+        "edittime" => TIME_NOW
+    );
+    $db->update_query("contests_replies", $insert_array, "rid = '$rid'");
+    redirect("contests.php?action=view&cid={$reply['cid']}");
+}
+
+elseif($mybb->input['action'] == "deletereply") {
+    $rid = $mybb->get_input('rid');
+    $sql = "SELECT * FROM mybb_contests_replies WHERE rid = '$rid'";
+    $query = $db->query($sql);
+    $reply = $db->fetch_array($query); 
+    if($mybb->user['uid'] == $reply['uid']) {
+        $db->delete_query("contests_replies", "rid = '$rid'");
+    }
+    redirect("contests.php?action=view&cid={$reply['cid']}");
 }

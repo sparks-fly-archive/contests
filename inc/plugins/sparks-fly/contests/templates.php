@@ -654,6 +654,72 @@ function contests_templates_install() {
   );
   $db->insert_query("templates", $contests_view_contest_participate);
 
+  $contests_participate = array(
+    'title'		=> 'contests_participate',
+    'template'	=> $db->escape_string('<html>
+    <head>
+    <title>Storming Gates - Contests - An {$contest[\'name\']} teilnehmen</title>
+    {$headerinclude}
+    </head>
+    <body>
+    {$header}
+    <table width="100%" border="0" align="center">
+    <tr>
+    <td width="23%" valign="top">
+    {$contests_nav}
+    </td>
+    <td valign="top">
+    <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+    <tr>
+    <td class="thead" colspan="{$colspan}"><strong>Teilnehmen an {$contest[\'name\']} - {$contest[\'type\']}</strong></td>
+    </tr>
+    <tr>
+    <td class="trow2" style="padding: 10px; text-align: justify;">
+    <div style="width: 95%; margin: auto; padding: 8px;" class="trow1">
+	<table border="0" cellspacing="5" cellpadding="{$theme[\'tablespace\']}"  class="tborder">
+		<tr>
+			<td class="trow2" id="sg-profile-avatar" valign="middle">
+				{$author[\'avatarlink\']}
+			</td>
+			<td class="trow2 sg-profile-data" valign="middle">
+				    <li><span><i class="fa fa-bars" aria-hidden="true"></i> Kategorie</span> <data>{$contest[\'category\']}</data>
+					<li><span><i class="fa fa-question" aria-hidden="true"></i> Contest-Art</span> <data>{$contest[\'type\']}</data>
+					<li><span>&bull; Tags</span> <data>{$contest[\'tags\']}</data>
+				<li><span><i class="fa fa-calendar" aria-hidden="true"></i> Deadline</span> <data>{$contest[\'deadline\']}</data>
+			</td>
+		</tr>
+		<tr>
+			<td class="trow2" colspan="2">
+				<div id="contest_content">
+					{$contest[\'description\']}
+				</div>
+			</td>
+		</tr>
+	</table>            
+<form method="post" enctype="multipart/form-data" name="input">
+<center><textarea id="message" name="message" rows="10" cols="70" tabindex="2" >{$message}</textarea>
+{$codebuttons}
+{$multiquote_external}</center>
+<br /> <center><input type="submit" class="button" name="previewpost" value="Teilnehmen" tabindex="4" /></center>
+<input type="hidden" name="action" value="do_participate" />
+	<input type="hidden" name="cid" value="{$contest[\'cid\']}" />
+</form>        
+    </div>
+    </td>
+    </tr>
+    </table>
+    </td>
+    </tr>
+    </table>
+    {$footer}
+    </body>
+    </html>'),
+    'sid'		=> '-1',
+    'version'	=> '',
+    'dateline'	=> TIME_NOW
+  );
+  $db->insert_query("templates", $contests_participate);
+
   /* $template_name = array(
     'title'		=> 'template_name',
     'template'	=> $db->escape_string('INHALT'),
